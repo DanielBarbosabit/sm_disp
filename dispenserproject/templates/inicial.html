@@ -1,0 +1,81 @@
+<!--Página inicial de LOGIN-->
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Smart Dispenser</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600">
+    <!-- https://fonts.google.com/specimen/Open+Sans -->
+    <link rel="stylesheet" href="/static/css/fontawesome.min.css">
+    <!-- https://fontawesome.com/ -->
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <!-- https://getbootstrap.com/ -->
+    <link rel="stylesheet" href="/static/css/tooplate.css">
+</head>
+
+<body>
+    <div class="container" style="text-align: center;margin-top:20px">
+        <img src="/static/img/logo.png"></img>
+    </div>
+
+    <div class="contact-area section-padding-0-80">
+        <div class="container">
+            <div class="row" style="text-align:center">
+                <div class="col-12">
+                    <div class="section-heading">
+                        <h2>Smart Dispenser</h2>
+                    </div>
+                </div>
+            </div>
+            {% include 'partials/_alertas.html' %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="contact-form-area">
+                        <form action="{% url 'login' %}" method="POST" style="text-align:center">
+                            {% csrf_token %}
+                            <table align="center" style="margin-top:40px">
+                                <tr>
+                                    <td align="center">
+                                        <div class="col-8 col-lg-12">
+                                        <label for="email"><b>Email</b></label>
+                                                <input type="text" id="email" class="form-control" name="email" placeholder="Entre com o email cadastrado">
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <div class="col-8 col-lg-12">
+                                            <label for="senha"><b>Senha</b></label>
+                                            <input id="senha" type="password" class="form-control" name="senha" placeholder="Digite aqui sua senha">
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <div class="col-12 text-center">
+                                            <button class="btn btn-success" type="submit">Acessar sua conta</button>
+                                            <button type="button" class="btn btn-primary" onclick="exibirCriarConta()">Ainda não tem conta? Clique aqui</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+function exibirCriarConta()
+{
+     location.href = "{% url 'cadastro' %}";
+}
+</script>
