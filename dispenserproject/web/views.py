@@ -79,7 +79,7 @@ def colhe_topicos_broker():
         else:
             papel_level = int(papel_level)
 
-        date_time = datetime.datetime.now()
+        date_time = datetime.datetime.now() - datetime.timedelta(hours=3)
         date_time = date_time.strftime("%m/%d/%Y-%H:%M:%S")
 
         new_data = Logs(topico_dispenser=topico_dispenser, date_time=date_time,
@@ -110,6 +110,7 @@ def desabilita_broker(request):
     else:
         return redirect('dashboard')
 
+#login e cadastro de usuários
 def index(request):
 
     return render(request, 'inicial.html')
@@ -185,6 +186,63 @@ def dashboard(request):
         return render(request, 'dashboard.html')
     else:
         return render(request, '/index/')
+
+
+def atualiza_pizza(request):
+    try:
+    #verificacao do email do usuario utilizando o dash principal
+        email = str(request.user.email)
+
+        query = connection.cursor()
+        query_str = """
+             select
+                 d.topico_dispenser, d.localizacao
+             from
+                 web_ident_dispenser d
+             where 
+                d.id_usuario_id 
+                in 
+                    (select a.id from auth_user a where a.email = '{}');""".format(email)
+        query.execute(query_str)
+        dados_dispensers = query.fetchall()
+        query.close()
+
+        dado_dispenser = {}
+        json_dispenser = []
+        for dispenser in dados_dispensers:
+
+            logs = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[:50]
+
+            for log in reversed(logs):
+
+                dado_dispenser['topíco'] = log.topico_dispenser
+                dado_dispenser['bateria'] = log.battery_level
+                dado_dispenser['papel'] = log.paper_level / 10
+                dado_dispenser['data'] = log.date_time
+
+                json_dispenser.append(dado_dispenser)
+                dado_dispenser = {}
+
+            # dado_dispenser['topíco'] = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[0].topico_dispenser
+            # dado_dispenser['bateria'] = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[0].battery_level
+            # dado_dispenser['papel'] = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[0].paper_level
+            # dado_dispenser['data'] = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[0].date_time
+            # json_dispenser.append(dado_dispenser)
+            #
+            # dado_dispenser = {}
+
+
+        bateria_atual = Logs.objects.filter(topico_dispenser='sdtx000000001').order_by('-id')[0].battery_level
+        nivel_papel_atual = Logs.objects.filter(topico_dispenser='sdtx000000001').order_by('-id')[0].paper_level
+
+        nivel_papel_atual = nivel_papel_atual / 10
+        bateria_atual = bateria_atual / 100
+    except:
+    #todo: enviar uma mensagem de que os dispensers desse usuarios não foram encontrados ou não existem
+        nivel_papel_atual = random.randint(1, 99)
+        bateria_atual = 100
+
+    return JsonResponse({'paper_level': nivel_papel_atual, 'baterry_level': bateria_atual, 'dados': json_dispenser})
 
 #Views - Cadastrar dispenser
 def busca_info_dispenser():
@@ -340,21 +398,6 @@ def atualiza_logs(request):
 
     dados_logs = list(busca_logs())
     return JsonResponse({'dados_novos': dados_logs})
-
-def atualiza_pizza(request):
-    try:
-        bateria_atual = Logs.objects.filter(topico_dispenser='sdtx0000001').order_by('-id')[0].battery_level
-        nivel_papel_atual = Logs.objects.filter(topico_dispenser='sdtx0000001').order_by('-id')[0].paper_level
-
-        nivel_papel_atual = nivel_papel_atual / 10
-        bateria_atual = bateria_atual / 100
-    except:
-        nivel_papel_atual = random.randint(1,99)
-        bateria_atual = 100
-
-
-    return JsonResponse({'paper_level': nivel_papel_atual, 'baterry_level': bateria_atual})
-
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):

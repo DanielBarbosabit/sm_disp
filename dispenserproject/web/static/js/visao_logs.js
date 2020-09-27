@@ -32,7 +32,7 @@ function carrega_dados(tabela){
         dict_linhas['Dispenser'] = dados[k][1];
         dict_linhas['Data'] = dados[k][2];
         dict_linhas['Tensão Baterial']= dados[k][3] / 100;
-        dict_linhas['Nível de papel']= dados[k][4];
+        dict_linhas['Nível de papel']= dados[k][4] / 10;
         tabela.push(dict_linhas);
         dict_linhas = {};
     });

@@ -82,19 +82,21 @@
 <!--             row -->
             <div class="row tm-content-row tm-mt-big">
 <!--                 Conteúdo 1-->
-                <div class="tm-col tm-col-small">
-                    <div class="bg-white tm-block h-100">
-<!--                        <h2 class="tm-block-title">Evolução do consumo diário por dispenser</h2>-->
-                        <canvas id="lineChart"></canvas>
-                    </div>
-                </div>
+<!--                <div class="tm-col tm-col-big">-->
+<!--                    <div class="bg-white tm-block h-100">-->
+<!--&lt;!&ndash;                        <h2 class="tm-block-title">Evolução do consumo diário por dispenser</h2>&ndash;&gt;-->
+<!--                        <canvas id="lineChart"></canvas>-->
+<!--                    </div>-->
+<!--                </div>-->
 <!--                 Conteúdo 2-->
+
                 <div class="tm-col tm-col-big">
                     <h2 class="tm-block-title">Dispenser A</h2>
                     <div class="bg-white tm-block h-100">
                         <canvas id="pieChart" class="chartjs-render-monitor"></canvas>
                     </div>
                 </div>
+                <div id="chartContainer" style="height: 500px; width: 200%;"></div>
 <!--                 Conteúdo 3-->
                 <div class="tm-col tm-col-big">
                     <div class="bg-white tm-block h-100">
@@ -134,14 +136,16 @@
 
     <script type='text/javascript' src='/static/js/index.js'></script>
     <script type='text/javascript' src='http://code.jquery.com/jquery-1.7.2.min.js'></script>
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
     <script>
 <!--        let ctxLine,-->
 <!--            ctxBar,-->
         let ctxPie,
+<!--            ctxLine,-->
             optionsLine,
             optionsBar,
             optionsPie,
-<!--            configLine,-->
+            configLine,
 <!--            configBar,-->
             configPie,
 <!--            lineChart;-->
