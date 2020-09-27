@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 import paho.mqtt.client as mqtt
 import paho.mqtt.subscribe as subscribe
 import time
@@ -30,7 +31,7 @@ max_linhas = 5000
 global intervalo_coleta
 intervalo_coleta = 10
 
-sched = BackgroundScheduler()
+sched = BackgroundScheduler(timeout=11)
 
 def callback_broker():
 
@@ -43,49 +44,68 @@ def callback_broker():
         # Conexão simples com o Broker
         print("Abrindo conexão...")
         try:
-            msg = subscribe.simple("sdtx0000001", hostname="broker.hivemq.com",
-                                   port=1883, keepalive = 10, client_id="smartdispenserws")
-
-            topico_dispenser = str(msg.topic)
-            battery_level = str(msg.payload).strip("b'")[0:3]
-            battery_level = int(battery_level)
-            papel_level = str(msg.payload).strip("b'")[3:6]
-            if papel_level == '00Z':
-                papel_level = 0
-            elif papel_level == '00C':
-                papel_level = 1000
-            else:
-                papel_level = int(papel_level)
-
-            date_time = datetime.datetime.now()
-            date_time = date_time.strftime("%m/%d/%Y-%H:%M:%S")
-
-
-            new_data = Logs(topico_dispenser = topico_dispenser, date_time=date_time,
-                                      battery_level = battery_level, paper_level = papel_level)
-            new_data.save()
-            print("Dado inserido no banco de dados")
+            colhe_topicos_broker()
 
         except:
             print("Não coletada a mensagem")
     else:
         print('Banco de dados já atingiu o máximo estipulado')
 
+def colhe_topicos_broker():
+    #Busca todos os dispensers
+    query = connection.cursor()
+    query_str = """
+         select
+             d.topico_dispenser
+         from
+             web_ident_dispenser d;
+     """
+    query.execute(query_str)
+    topicos = query.fetchall()
+    query.close()
 
+    for topico in topicos:
+        msg = subscribe.simple(str(topico[0]), hostname="broker.hivemq.com",
+                               port=1883, keepalive=intervalo_coleta, client_id="smartdispenserws")
+
+        topico_dispenser = str(msg.topic)
+        battery_level = str(msg.payload).strip("b'")[0:3]
+        battery_level = int(battery_level)
+        papel_level = str(msg.payload).strip("b'")[3:6]
+        if papel_level == '00Z':
+            papel_level = 0
+        elif papel_level == '00C':
+            papel_level = 1000
+        else:
+            papel_level = int(papel_level)
+
+        date_time = datetime.datetime.now()
+        date_time = date_time.strftime("%m/%d/%Y-%H:%M:%S")
+
+        new_data = Logs(topico_dispenser=topico_dispenser, date_time=date_time,
+                        battery_level=battery_level, paper_level=papel_level)
+        new_data.save()
+        print("Dado inserido no banco de dados")
+
+
+@login_required(login_url='/index/')
 def habilita_broker(request):
     if sched.state == 2:
         sched.resume()
+
         return redirect('dashboard')
     if sched.state == 1:
         return redirect('dashboard')
     # Schedule job_function to be called every two hours
-    sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta)
+    sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta, max_instances=5)
     sched.start()
     return redirect('dashboard')
 
+@login_required(login_url='/index/')
 def desabilita_broker(request):
     if sched.state == 1:
         sched.pause()
+
         return redirect('dashboard')
     else:
         return redirect('dashboard')
@@ -159,7 +179,7 @@ def cria_cadastro(request):
             messages.error(request, 'Usuário cadastrado com sucesso!')
             return redirect('index')
 
-
+@login_required(login_url='/index/')
 def dashboard(request):
     if request.user.is_active:
         return render(request, 'dashboard.html')
@@ -168,7 +188,7 @@ def dashboard(request):
 
 #Views - Cadastrar dispenser
 def busca_info_dispenser():
-    # JSON da relação de dispensers e usuário
+    # Relação de dispensers e usuário
     query = connection.cursor()
     query_str = """
          select
@@ -199,6 +219,7 @@ def busca_usuarios():
     query.close()
     return dados_usuarios
 
+@login_required(login_url='/index/')
 def cadastrardispenser(request):
     if request.user.is_superuser:
         try:
@@ -217,6 +238,7 @@ def cadastrardispenser(request):
     else:
         return render(request, 'dashboard/')
 
+@login_required(login_url='/index/')
 def adiciona_dispenser(request):
     #Verifica o último dispenser incluído
     try:
@@ -241,6 +263,7 @@ def adiciona_dispenser(request):
 
     return redirect('cadastrardispenser')
 
+@login_required(login_url='/index/')
 def deleta_dispenser(request):
     topico_deletado = request.GET['topico_dispenser'].split('_')[1]
 
@@ -248,6 +271,7 @@ def deleta_dispenser(request):
 
     return redirect('cadastrardispenser')
 
+@login_required(login_url='/index/')
 def edita_dispenser(request):
     if request.POST:
         dispenser = str(request.POST.get('id_dispenser'))
@@ -286,6 +310,7 @@ def busca_logs():
 
     return dados_logs
 
+@login_required(login_url='/index/')
 def visao_logs(request):
 
     dados_logs = json.dumps(busca_logs())
@@ -311,6 +336,10 @@ def deleta_logs(request):
 
     return redirect('visao_logs')
 
+def atualiza_logs(request):
+
+    dados_logs = list(busca_logs())
+    return JsonResponse({'dados_novos': dados_logs})
 
 def atualiza_pizza(request):
     try:

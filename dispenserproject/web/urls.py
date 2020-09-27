@@ -21,7 +21,8 @@ urlpatterns = [
     path('edita_dispenser/', views.edita_dispenser, name='edita_disperser'),
     path('visao_logs/', views.visao_logs, name = 'visao_logs'),
     path('exporta_logs/', views.exporta_logs, name = 'exporta_logs'),
-    path('edeleta_logs/', views.deleta_logs, name = 'deleta_logs')
+    path('edeleta_logs/', views.deleta_logs, name = 'deleta_logs'),
+    path('atualiza_logs/', views.atualiza_logs, name = 'atualiza_logs')
 ]
 
 urlpatterns += staticfiles_urlpatterns()
