@@ -31,7 +31,7 @@ max_linhas = 5000
 global intervalo_coleta
 intervalo_coleta = 10
 
-sched = BackgroundScheduler(timeout=11)
+sched = BackgroundScheduler()
 
 def callback_broker():
 
@@ -97,7 +97,7 @@ def habilita_broker(request):
     if sched.state == 1:
         return redirect('dashboard')
     # Schedule job_function to be called every two hours
-    sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta, max_instances=5)
+    sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta)
     sched.start()
     return redirect('dashboard')
 
