@@ -32,10 +32,13 @@ global intervalo_coleta
 intervalo_coleta = 10
 
 sched = BackgroundScheduler()
+sched_reserva = BackgroundScheduler()
 
 def callback_broker():
 
-    start = timer()
+    # Restart thread reserva
+    if sched_reserva.running != True:
+        sched_reserva.resume()
 
     # Chama rotina para verificação da quantidade de registro da tabela de LOGS
     busca_e_salva = verifica_qtde_logs()
@@ -50,6 +53,18 @@ def callback_broker():
             print("Não coletada a mensagem")
     else:
         print('Banco de dados já atingiu o máximo estipulado')
+
+# Inicia os dois schedulers
+sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta)
+sched.start()
+
+def restart_thread():
+    if sched.running != True:
+        sched.resume()
+        return
+
+sched_reserva.add_job(restart_thread, 'interval', seconds=intervalo_coleta * 2)
+sched_reserva.start()
 
 def colhe_topicos_broker():
     #Busca todos os dispensers
@@ -66,7 +81,7 @@ def colhe_topicos_broker():
 
     for topico in topicos:
         msg = subscribe.simple(str(topico[0]), hostname="broker.hivemq.com",
-                               port=1883, keepalive=intervalo_coleta, client_id="smartdispenserws")
+                               port=1883, keepalive=120, client_id="smartdispenserws")
 
         topico_dispenser = str(msg.topic)
         battery_level = str(msg.payload).strip("b'")[0:3]
@@ -92,19 +107,21 @@ def colhe_topicos_broker():
 def habilita_broker(request):
     if sched.state == 2:
         sched.resume()
-
+        sched_reserva.resume()
         return redirect('dashboard')
+
     if sched.state == 1:
         return redirect('dashboard')
-    # Schedule job_function to be called every two hours
-    sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta)
-    sched.start()
+    # # Schedule job_function to be called every two hours
+    # sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta)
+    # sched.start()
     return redirect('dashboard')
 
 @login_required(login_url='/index/')
 def desabilita_broker(request):
     if sched.state == 1:
         sched.pause()
+        sched_reserva.pause()
 
         return redirect('dashboard')
     else:
@@ -371,9 +388,12 @@ def busca_logs():
 @login_required(login_url='/index/')
 def visao_logs(request):
 
-    dados_logs = json.dumps(busca_logs())
+    dados = busca_logs()
+    qtde_logs = len(dados)
+    dados_logs = json.dumps(dados[-20:-1])
 
-    return render(request, 'visao_logs.html', {'dados': dados_logs})
+    return render(request, 'visao_logs.html', {'dados': dados_logs,
+                                               'qtde_logs': qtde_logs})
 
 def exporta_logs(request):
     logs = busca_logs()

@@ -1,5 +1,7 @@
 $(document).ready(function() {
     var tabela = [];
+
+    $("#qtde_logs").text(qtde_logs);
     carrega_dados(tabela);
 
     var tabela_logs = $('#table_logs_dispenser').DataTable({
