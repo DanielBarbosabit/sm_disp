@@ -32,13 +32,8 @@ global intervalo_coleta
 intervalo_coleta = 10
 
 sched = BackgroundScheduler()
-sched_reserva = BackgroundScheduler()
 
 def callback_broker():
-
-    # Restart thread reserva
-    if sched_reserva.running != True:
-        sched_reserva.resume()
 
     # Chama rotina para verificação da quantidade de registro da tabela de LOGS
     busca_e_salva = verifica_qtde_logs()
@@ -58,14 +53,6 @@ def callback_broker():
 sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta)
 sched.start()
 
-def restart_thread():
-    if sched.running != True:
-        sched.resume()
-        return
-
-sched_reserva.add_job(restart_thread, 'interval', seconds=intervalo_coleta * 2)
-sched_reserva.start()
-
 def colhe_topicos_broker():
     #Busca todos os dispensers
     query = connection.cursor()
@@ -81,7 +68,7 @@ def colhe_topicos_broker():
 
     for topico in topicos:
         msg = subscribe.simple(str(topico[0]), hostname="broker.hivemq.com",
-                               port=1883, keepalive=120, client_id="smartdispenserws")
+                               port=1883, keepalive=30, client_id="smartdispenserwsdev")
 
         topico_dispenser = str(msg.topic)
         battery_level = str(msg.payload).strip("b'")[0:3]
@@ -107,21 +94,18 @@ def colhe_topicos_broker():
 def habilita_broker(request):
     if sched.state == 2:
         sched.resume()
-        sched_reserva.resume()
+
         return redirect('dashboard')
 
     if sched.state == 1:
         return redirect('dashboard')
-    # # Schedule job_function to be called every two hours
-    # sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta)
-    # sched.start()
+
     return redirect('dashboard')
 
 @login_required(login_url='/index/')
 def desabilita_broker(request):
     if sched.state == 1:
         sched.pause()
-        sched_reserva.pause()
 
         return redirect('dashboard')
     else:
@@ -224,42 +208,38 @@ def atualiza_pizza(request):
         dados_dispensers = query.fetchall()
         query.close()
 
+        lista_dispensers = []
         dado_dispenser = {}
+        dispenser_id = {}
         json_dispenser = []
         for dispenser in dados_dispensers:
 
+            dispenser_id['topico'] = 'Dispenser ' + str(dispenser[0].strip('sdtx').lstrip('0'))
+            dispenser_id['localizacao'] = dispenser[1]
             logs = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[:50]
 
             for log in reversed(logs):
 
-                dado_dispenser['topíco'] = log.topico_dispenser
-                dado_dispenser['bateria'] = log.battery_level
+                dado_dispenser['bateria'] = log.battery_level / 100
                 dado_dispenser['papel'] = log.paper_level / 10
                 dado_dispenser['data'] = log.date_time
 
                 json_dispenser.append(dado_dispenser)
                 dado_dispenser = {}
 
-            # dado_dispenser['topíco'] = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[0].topico_dispenser
-            # dado_dispenser['bateria'] = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[0].battery_level
-            # dado_dispenser['papel'] = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[0].paper_level
-            # dado_dispenser['data'] = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[0].date_time
-            # json_dispenser.append(dado_dispenser)
-            #
-            # dado_dispenser = {}
+            dispenser_id['dados'] = json_dispenser
+            lista_dispensers.append(dispenser_id)
+            dispenser_id = {}
+            json_dispenser = []
 
-
-        bateria_atual = Logs.objects.filter(topico_dispenser='sdtx000000001').order_by('-id')[0].battery_level
-        nivel_papel_atual = Logs.objects.filter(topico_dispenser='sdtx000000001').order_by('-id')[0].paper_level
-
-        nivel_papel_atual = nivel_papel_atual / 10
-        bateria_atual = bateria_atual / 100
     except:
     #todo: enviar uma mensagem de que os dispensers desse usuarios não foram encontrados ou não existem
         nivel_papel_atual = random.randint(1, 99)
         bateria_atual = 100
 
-    return JsonResponse({'paper_level': nivel_papel_atual, 'baterry_level': bateria_atual, 'dados': json_dispenser})
+    # return JsonResponse({'paper_level': nivel_papel_atual, 'baterry_level': bateria_atual, 'dados': dispenser_id})
+
+    return JsonResponse({'dispenser': lista_dispensers})
 
 #Views - Cadastrar dispenser
 def busca_info_dispenser():
@@ -390,7 +370,8 @@ def visao_logs(request):
 
     dados = busca_logs()
     qtde_logs = len(dados)
-    dados_logs = json.dumps(dados[-20:-1])
+
+    dados_logs = json.dumps(dados[(qtde_logs-20):(qtde_logs)])
 
     return render(request, 'visao_logs.html', {'dados': dados_logs,
                                                'qtde_logs': qtde_logs})

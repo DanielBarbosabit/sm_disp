@@ -22,78 +22,169 @@ function atualiza_grafico_pizza(){
 }
 
 function grafico_pizza(dados){
-    var porcentagem_final;
-    porcentagem_final = dados.paper_level;
-    if (porcentagem_final == '0Z')
-        porcentagem_final = 0;
-    if (porcentagem_final == '0C')
-        porcentagem_final = 100;
-    pieChart.data.datasets[0].data[0] = 100 - porcentagem_final;
-    pieChart.data.datasets[0].data[1] = porcentagem_final;
-    pieChart.update();
+//    var porcentagem_final;
+//    porcentagem_final = dados.paper_level;
+//    if (porcentagem_final == '0Z')
+//        porcentagem_final = 0;
+//    if (porcentagem_final == '0C')
+//        porcentagem_final = 100;
+//    pieChart.data.datasets[0].data[0] = 100 - porcentagem_final;
+//    pieChart.data.datasets[0].data[1] = porcentagem_final;
+//    pieChart.update();
 
 //    Atualizacao- grafico temporal
-//    console.log(dados.dados)
-    var logs_dispenser = dados.dados;
-    lista_dados = [];
-    var dicionario_ponto = {};
+//    Variaveis do grafico de papel
+    if(dados.dispenser != 0){
+        $('#sem_dispenser').hide();
 
-    Object.keys(logs_dispenser).forEach(k =>{
-        console.log(k);
-        dicionario_ponto['label'] = logs_dispenser[k].data;
-        dicionario_ponto['y'] = logs_dispenser[k].papel;
+        var logs = dados.dispenser;
+        var dicionario_ponto = {};
+        var dados_dispenser;
+        lista_dados = [];
+        var lista_graficos = [];
+        var dicts_dispenser = {};
 
-        lista_dados.push(dicionario_ponto);
-        dicionario_ponto = {};
-    });
+    //    Variaveis do grafico de bateria
+        var dicionario_ponto_bateria = {};
+        var lista_dados_bateria = [];
+        var dicts_dispenser_bateria = {};
+        var lista_graficos_baterias = [];
 
-    var chart = new CanvasJS.Chart("chartContainer", {
-        theme:"light2",
-        animationEnabled: false,
-        title:{
-            text: "Evolução temporal da quantidade de papel"
-        },
-        axisY :{
-            title: "Nível de papel (%)",
-            suffix: "%",
-            labelAutoFit: false,
-            minimum: 0,
-            maximum: 100
-        },
-        toolTip: {
-            shared: "true"
-        },
-        legend:{
-            cursor:"pointer",
-            itemclick : toggleDataSeries
-        },
-        data: [{
-            type: "line",
-            visible: true,
-            showInLegend: true,
-            yValueFormatString: "##.# %",
-            name: "Season 1",
-            dataPoints: lista_dados
-        }]
-    });
+        Object.keys(logs).forEach(k =>{
+            console.log(logs[k]);
+            dados_dispenser = logs[k].dados;
+            Object.keys(dados_dispenser).forEach(i =>{
 
-chart.render();
+    //                Dicionario do gráfico de consumo
+                    dicionario_ponto['label'] = dados_dispenser[i].data;
+                    dicionario_ponto['y'] = dados_dispenser[i].papel;
 
-function toggleDataSeries(e) {
-	if (typeof(e.dataSeries.visible) === "undefined" || e.dataSeries.visible ){
-		e.dataSeries.visible = false;
-	} else {
-		e.dataSeries.visible = true;
-	}
-	chart.render();
-}
+    //                Dicionario do grafico de tensão de bateria
+                    dicionario_ponto_bateria['label'] = dados_dispenser[i].data;
+                    dicionario_ponto_bateria['y'] = dados_dispenser[i].bateria;
 
-}
+    //                Inclusao de pontos do grafico de consumo
+                    lista_dados.push(dicionario_ponto);
+                    dicionario_ponto = {};
 
-var lista_dados = [];
-window.onload = function () {
+    //                Inclusao de pontos do grafico de tensao
+                    lista_dados_bateria.push(dicionario_ponto_bateria);
+                    dicionario_ponto_bateria = {};
 
+            })
+    //        Inclusao de uma linha para cada dispenser
 
+            dicts_dispenser['type'] = "line";
+            dicts_dispenser['visible'] = true;
+            dicts_dispenser['showInLegend'] = true;
+            dicts_dispenser['yValueFormatString'] = "##.#%" / 100,
+            dicts_dispenser['name'] = logs[k].topico;
+            dicts_dispenser['dataPoints'] = lista_dados;
+            lista_dados = [];
 
+            lista_graficos.push(dicts_dispenser);
+            dicts_dispenser = {};
 
+            dicts_dispenser_bateria['type'] = "line";
+            dicts_dispenser_bateria['visible'] = true;
+            dicts_dispenser_bateria['showInLegend'] = true;
+            dicts_dispenser_bateria['yValueFormatString'] = "#.## V",
+            dicts_dispenser_bateria['name'] = logs[k].topico;
+            dicts_dispenser_bateria['dataPoints'] = lista_dados_bateria;
+            lista_dados_bateria = [];
+
+            lista_graficos_baterias.push(dicts_dispenser_bateria);
+            dicts_dispenser_bateria = {};
+        })
+
+        var chart = new CanvasJS.Chart("chartContainer", {
+            theme:"light3",
+            animationEnabled: false,
+            title:{
+                text: "Evolução temporal da quantidade de papel"
+            },
+            axisY :{
+                title: "Nível de papel (%)",
+                suffix: "%",
+                labelAutoFit: false,
+                minimum: 0,
+                maximum: 100
+            },
+            toolTip: {
+                shared: "true"
+            },
+            legend:{
+                cursor:"pointer",
+                itemclick : toggleDataSeries
+            },
+            data: lista_graficos
+        });
+
+        var chart_bateria = new CanvasJS.Chart("grafico_bateria", {
+            theme:"light3",
+            animationEnabled: false,
+            title:{
+                text: "Tensão das baterias"
+            },
+            axisY :{
+                title: "Tensão (V)",
+                suffix: "V",
+                labelAutoFit: true,
+                minimum: 0,
+                maximum: 7
+            },
+            toolTip: {
+                shared: "true"
+            },
+            legend:{
+                cursor:"pointer",
+                itemclick : toggleDataSeries
+            },
+            data: lista_graficos_baterias
+        });
+
+//        Instancia gráficos de pizza
+//        var pizza = new CanvasJS.Chart("chartContainer",
+//        {
+//            title:{
+//                text: "Gaming Consoles Sold in 2012"
+//            },
+//            legend: {
+//                maxWidth: 350,
+//                itemWidth: 120
+//            },
+//            data: [
+//            {
+//                type: "pie",
+//                showInLegend: true,
+//                legendText: "{indexLabel}",
+//                dataPoints: [
+//                    { y: 4181563, indexLabel: "PlayStation 3" },
+//                    { y: 2175498, indexLabel: "Wii" },
+//                    { y: 3125844, indexLabel: "Xbox 360" },
+//                    { y: 1176121, indexLabel: "Nintendo DS"},
+//                    { y: 1727161, indexLabel: "PSP" },
+//                    { y: 4303364, indexLabel: "Nintendo 3DS"},
+//                    { y: 1717786, indexLabel: "PS Vita"}
+//                ]
+//            }
+//            ]
+//        });
+
+        chart.render();
+        chart_bateria.render();
+
+        function toggleDataSeries(e) {
+            if (typeof(e.dataSeries.visible) === "undefined" || e.dataSeries.visible ){
+                e.dataSeries.visible = false;
+            } else {
+                e.dataSeries.visible = true;
+            }
+            chart.render();
+        }
+    }else{
+        $('#sem_dispenser').show();
+        $('#chartContainer').hide();
+        $('#grafico_bateria').hide();
+    }
 }

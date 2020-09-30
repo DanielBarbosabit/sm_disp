@@ -81,22 +81,26 @@
             </div>
 <!--             row -->
             <div class="row tm-content-row tm-mt-big">
-<!--                 Conteúdo 1-->
-<!--                <div class="tm-col tm-col-big">-->
-<!--                    <div class="bg-white tm-block h-100">-->
-<!--&lt;!&ndash;                        <h2 class="tm-block-title">Evolução do consumo diário por dispenser</h2>&ndash;&gt;-->
-<!--                        <canvas id="lineChart"></canvas>-->
+
+
+<!--                Gráficos de pizza -->
+<!--                <div class="container-fluid">-->
+<!--                    <div class="tm-col tm-col-big">-->
+<!--                        <h2 class="tm-block-title">Dispenser A</h2>-->
+<!--                        <div class="bg-white tm-block h-100">-->
+<!--                            <canvas id="pieChart"></canvas>-->
+<!--                        </div>-->
 <!--                    </div>-->
 <!--                </div>-->
-<!--                 Conteúdo 2-->
-
-                <div class="tm-col tm-col-big">
-                    <h2 class="tm-block-title">Dispenser A</h2>
-                    <div class="bg-white tm-block h-100">
-                        <canvas id="pieChart" class="chartjs-render-monitor"></canvas>
+                <div class="container-fluid" style="margin-left:120px; width:100%">
+                    <div id="chartContainer" style="height: 400px; width: 300%"></div>
+                    {% if request.user.is_superuser %}
+                    <div id="grafico_bateria" style="height: 400px; width: 300%; margin-top:50px"></div>
+                    {% endif %}
+                    <div class="container" align="center">
+                        <h2 id="sem_dispenser">Olá! Você ainda não possui dispensers cadastrados.</h2>
                     </div>
                 </div>
-                <div id="chartContainer" style="height: 500px; width: 200%;"></div>
 <!--                 Conteúdo 3-->
                 <div class="tm-col tm-col-big">
                     <div class="bg-white tm-block h-100">
