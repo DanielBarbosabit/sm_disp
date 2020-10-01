@@ -22,18 +22,7 @@ function atualiza_grafico_pizza(){
 }
 
 function grafico_pizza(dados){
-//    var porcentagem_final;
-//    porcentagem_final = dados.paper_level;
-//    if (porcentagem_final == '0Z')
-//        porcentagem_final = 0;
-//    if (porcentagem_final == '0C')
-//        porcentagem_final = 100;
-//    pieChart.data.datasets[0].data[0] = 100 - porcentagem_final;
-//    pieChart.data.datasets[0].data[1] = porcentagem_final;
-//    pieChart.update();
 
-//    Atualizacao- grafico temporal
-//    Variaveis do grafico de papel
     if(dados.dispenser != 0){
         $('#sem_dispenser').hide();
 
@@ -97,6 +86,8 @@ function grafico_pizza(dados){
             dicts_dispenser_bateria = {};
         })
 
+        inicializacao = 1;
+
         var chart = new CanvasJS.Chart("chartContainer", {
             theme:"light3",
             animationEnabled: false,
@@ -129,7 +120,7 @@ function grafico_pizza(dados){
             axisY :{
                 title: "Tensão (V)",
                 suffix: "V",
-                labelAutoFit: true,
+                labelAutoFit: false,
                 minimum: 0,
                 maximum: 7
             },
@@ -143,34 +134,6 @@ function grafico_pizza(dados){
             data: lista_graficos_baterias
         });
 
-//        Instancia gráficos de pizza
-//        var pizza = new CanvasJS.Chart("chartContainer",
-//        {
-//            title:{
-//                text: "Gaming Consoles Sold in 2012"
-//            },
-//            legend: {
-//                maxWidth: 350,
-//                itemWidth: 120
-//            },
-//            data: [
-//            {
-//                type: "pie",
-//                showInLegend: true,
-//                legendText: "{indexLabel}",
-//                dataPoints: [
-//                    { y: 4181563, indexLabel: "PlayStation 3" },
-//                    { y: 2175498, indexLabel: "Wii" },
-//                    { y: 3125844, indexLabel: "Xbox 360" },
-//                    { y: 1176121, indexLabel: "Nintendo DS"},
-//                    { y: 1727161, indexLabel: "PSP" },
-//                    { y: 4303364, indexLabel: "Nintendo 3DS"},
-//                    { y: 1717786, indexLabel: "PS Vita"}
-//                ]
-//            }
-//            ]
-//        });
-
         chart.render();
         chart_bateria.render();
 
@@ -181,6 +144,7 @@ function grafico_pizza(dados){
                 e.dataSeries.visible = true;
             }
             chart.render();
+            chart_bateria.render();
         }
     }else{
         $('#sem_dispenser').show();

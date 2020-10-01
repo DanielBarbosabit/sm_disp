@@ -29,7 +29,7 @@ max_linhas = 5000
 
 #Intervalo de coleta com o broker
 global intervalo_coleta
-intervalo_coleta = 10
+intervalo_coleta = 30
 
 sched = BackgroundScheduler()
 
@@ -68,7 +68,7 @@ def colhe_topicos_broker():
 
     for topico in topicos:
         msg = subscribe.simple(str(topico[0]), hostname="broker.hivemq.com",
-                               port=1883, keepalive=30, client_id="smartdispenserwsdev")
+                               port=1883, keepalive=5, client_id="smartdispenserwsdev")
 
         topico_dispenser = str(msg.topic)
         battery_level = str(msg.payload).strip("b'")[0:3]
@@ -135,7 +135,6 @@ def login(request):
             user = auth.authenticate(request, username=nome, password=senha)
             if user is not None:
                 auth.login(request, user)
-                print('Login realizado com sucesso')
                 return redirect('dashboard')
         else:
             messages.error(request,'Usuário/Senha inválidos')
@@ -170,7 +169,7 @@ def cria_cadastro(request):
         if User.objects.filter(username=nome).exists():
             messages.error(request,'Usuário já cadastrado')
             return redirect('cadastro')
-        if email == 'daniel_herbert_barbosa@hotmail.com' or email == 'diogom382@gmail.com':
+        if email == 'daniel_herbert_barbosa@hotmail.com' or email == 'diogom382@gmail.com' or email == 'admindispenser@gmail.com':
             user = User.objects.create_user(username=nome, email=email, password=senha, is_superuser=True)
             user.save()
             messages.error(request, 'Usuário cadastrado com sucesso!')
@@ -216,7 +215,7 @@ def atualiza_pizza(request):
 
             dispenser_id['topico'] = 'Dispenser ' + str(dispenser[0].strip('sdtx').lstrip('0'))
             dispenser_id['localizacao'] = dispenser[1]
-            logs = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[:50]
+            logs = Logs.objects.filter(topico_dispenser=str(dispenser[0])).order_by('-id')[:30]
 
             for log in reversed(logs):
 
