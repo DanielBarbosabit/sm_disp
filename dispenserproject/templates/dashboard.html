@@ -19,19 +19,25 @@
     <link rel="stylesheet" href="/static/css/bootstrap.min.css">
     <!-- https://getbootstrap.com/ -->
     <link rel="stylesheet" href="/static/css/tooplate.css">
+    <link rel="stylesheet" href="/static/css/dash.css">
+
+    <!--    Tabela-->
+    <link rel="stylesheet" href="/static/css/datatables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
 </head>
 
 <body id="reportsPage">
     <div class="" id="home">
         <div class="container">
             <div class="row">
-                <div class="col-9">
+                <div class="col-12">
                     <nav class="navbar navbar-expand-xl navbar-light bg-light">
                         <a class="navbar-brand" href="#">
                             <div>
                                 <img src="/static/img/logo_sem_fundo_dash.png"></img>
-                             </div>
-                            <h1 class="tm-site-title mb-0">SMART DISPENSER</h1>
+                                <h5>SMART DISPENSER</h5>
+                            </div>
+<!--                            <h5 class="tm-site-title mb-0">SMART DISPENSER</h5>-->
                         </a>
                         <button class="navbar-toggler ml-auto mr-0" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                             aria-expanded="false" aria-label="Toggle navigation">
@@ -77,29 +83,19 @@
                 </div>
 <!--             row -->
             <div class="col-8" style="margin-top:30px">
-                <div class="container-fluid" style="width:100%; margin-left:50px" align="center">
-                    <div id="chartContainer" style="height:300px;width:100%"></div>
-                    {% if request.user.is_superuser %}
-                    <div id="grafico_bateria" style="height: 300px; width: 100%; margin-top:50px"></div>
-                    {% endif %}
-                    <div class="container" align="center">
-                        <h2 id="sem_dispenser">Olá! Você ainda não possui dispensers cadastrados.</h2>
-                    </div>
-                </div>
                 <!-- Tabela -->
-                <div class="container-fluid" style="margin-top:20px;margin-bottom:20px;margin-left:50px">
-<!--                    <table id="table_cadastro_dispenser" border="1" class="display" style="width:100%">-->
-<!--                        <thead>-->
-<!--                            <tr>-->
-<!--                                <th>Dispenser</th>-->
-<!--                                <th>Usuário</th>-->
-<!--                                <th>Localização</th>-->
-<!--                                <th>Ação</th>-->
-<!--                            </tr>-->
-<!--                        </thead>-->
-<!--                        <tbody>-->
-<!--                        </tbody>-->
-<!--                    </table>-->
+                <div id="container_tabela" class="container-fluid" style="margin-top:50px;margin-bottom:50px;margin-left:50px">
+                </div>
+                <div class="container-fluid" style="width:100%;" align="center">
+                    <div class="container" align="center">
+                        <h4 id="sem_dispenser">Olá! Estamos verificando se você possui dispensers cadastrados</h4>
+                    </div>
+                    <div id="loader_dash" class="loader"></div>
+                    <div id="chartContainer" style="height:300px;width:170%"></div>
+                    {% if request.user.is_superuser %}
+                    <div id="grafico_bateria" style="height: 300px; width: 170%; margin-top:50px"></div>
+                    {% endif %}
+
                 </div>
             </div>
             {% if request.user.is_superuser %}
@@ -132,5 +128,26 @@
     <script type='text/javascript' src='/static/js/index.js'></script>
     <script type='text/javascript' src='http://code.jquery.com/jquery-1.7.2.min.js'></script>
     <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script>
+<!--    Inclusao da tabela por script para que ela não seja vista antes do loader-->
+        var render_tabela = '<table id="tabela_dispenser" style="width:100%; margin-top:50px; margin-bottom:50px" border="1" class="display" align="center">' +
+            '<thead>' +
+                '<tr>' +
+                    '<th style="text-align:center">Dispenser</th>' +
+                    '<th style="text-align:center">Localização</th>'+
+                    '<th style="text-align:center">Quantidade de papel (%)</th>' +
+                    '<th style="text-align:center">Bateria</th>' +
+                '</tr>' +
+            '</thead>' +
+            '<tbody style="text-align:center">' +
+            '</tbody>' +
+        '</table>';
+        $('#container_tabela').append(render_tabela);
+        $('#tabela_dispenser').hide();
+    </script>
+
+<!--    Inclusão da tabela-->
+    <script src="/static/js/datatables.min.js"
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
 </body>
 </html>

@@ -1,11 +1,25 @@
+//Globais
+var tempo_atualizacao = 5000;
+var tabela = [];
+
 $(document).ready(function() {
-    atualiza_grafico_pizza();
+    setTimeout(function () {
+        atualiza_grafico_pizza();
+    }, 3000);
 });
 
 
 function atualiza_grafico_pizza(){
+    $.ajax({
+      dataType: 'json',
+      url: '/busca_dados_atuais/',
+//          data: data,
+      success: function(dados){
+        grafico_pizza(dados);
+        tab_dispenser();
+      }
+    });
     //função para atualizar o chart
-
     setInterval(function(){
         console.log('realizando atualizacao do grafico...')
         $.ajax({
@@ -13,12 +27,11 @@ function atualiza_grafico_pizza(){
           url: '/busca_dados_atuais/',
 //          data: data,
           success: function(dados){
-//            console.log(dados);
-            grafico_pizza(dados)
+            grafico_pizza(dados);
+            tab_dispenser();
           }
         });
-    },2000);
-
+    },tempo_atualizacao);
 }
 
 function grafico_pizza(dados){
@@ -39,9 +52,29 @@ function grafico_pizza(dados){
         var dicts_dispenser_bateria = {};
         var lista_graficos_baterias = [];
 
+//        Variaveis da tabela
+        var dict_linha = {};
+        var length_array;
+        tabela = [];
+
         Object.keys(logs).forEach(k =>{
             console.log(logs[k]);
             dados_dispenser = logs[k].dados;
+
+//            Atualizacao da tabela
+            length_array = dados_dispenser.length - 1;
+            dict_linha['Dispenser'] = logs[k].topico;
+            dict_linha['Localização'] = logs[k].localizacao;
+            dict_linha['Quantidade de papel'] = dados_dispenser[length_array].papel;
+            if (dados_dispenser[length_array].bateria > 4,5){
+                dict_linha['Bateria'] = 'OK';
+            }else{
+                dict_linha['Bateria'] = 'Substituir';
+            }
+
+            tabela.push(dict_linha);
+            dict_linha = {};
+
             Object.keys(dados_dispenser).forEach(i =>{
 
     //                Dicionario do gráfico de consumo
@@ -86,13 +119,11 @@ function grafico_pizza(dados){
             dicts_dispenser_bateria = {};
         })
 
-        inicializacao = 1;
-
         var chart = new CanvasJS.Chart("chartContainer", {
             theme:"light3",
             animationEnabled: false,
             title:{
-                text: "Evolução temporal da quantidade de papel"
+                text: "Quantidade de papel (%)"
             },
             axisY :{
                 title: "Nível de papel (%)",
@@ -134,6 +165,7 @@ function grafico_pizza(dados){
             data: lista_graficos_baterias
         });
 
+        $('#loader_dash').hide();
         chart.render();
         chart_bateria.render();
 
@@ -147,8 +179,34 @@ function grafico_pizza(dados){
             chart_bateria.render();
         }
     }else{
+        $('#loader_dash').hide();
+        $('#sem_dispenser').text('Infelizmente, você ainda não possui dispensers :(');
         $('#sem_dispenser').show();
         $('#chartContainer').hide();
         $('#grafico_bateria').hide();
     }
+}
+
+function tab_dispenser(){
+    $('#tabela_dispenser').show();
+
+    var tabela_logs = $('#tabela_dispenser').DataTable({
+        paging: true,
+        searching: true,
+        ordering: true,
+        "order": [[ 2, "asc" ]],
+        "columns": [
+            {"data": "Dispenser"},
+            {"data": "Localização"},
+            {"data": "Quantidade de papel"},
+            {"data": "Bateria"}
+        ],
+        "data": tabela,
+        "destroy": true,
+        "rowCallback": function( row, data, index ) {
+        if ( data['Quantidade de papel'] < 20 ){
+            $('td', row).css('background-color', '#FF7777');
+        }
+        }
+    });
 }
