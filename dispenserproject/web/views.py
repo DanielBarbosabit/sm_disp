@@ -29,7 +29,7 @@ max_linhas = 5000
 
 #Intervalo de coleta com o broker
 global intervalo_coleta
-intervalo_coleta = 10
+intervalo_coleta = 30
 
 sched = BackgroundScheduler()
 
@@ -184,11 +184,11 @@ def cria_cadastro(request):
 
 @login_required(login_url='/index/')
 def dashboard(request):
-    if request.user.is_active:
-        usuario = json.dumps(request.user.username.split(" ")[0])
-        return render(request, 'dashboard.html', {'usuario': usuario})
-    else:
-        return render(request, '/index/')
+    # if request.user.is_active:
+    usuario = json.dumps(request.user.username.split(" ")[0])
+    return render(request, 'dashboard.html', {'usuario': usuario})
+    # else:
+    #     return render(request, '/index/')
 
 
 def atualiza_pizza(request):
@@ -368,14 +368,24 @@ def edita_dispenser(request):
     return redirect('cadastrardispenser')
 
 #Views - Página de visão de Logs
-def busca_logs():
+def busca_logs(descendente = False):
     query = connection.cursor()
-    query_str = """
-         select 
-             *
-         from 
-             web_logs;
-     """
+    if not descendente:
+        query_str = """
+             select 
+                 *
+             from 
+                 web_logs;
+         """
+    else:
+        query_str = """
+             select 
+                 *
+             from 
+                 web_logs
+             order by
+                web_logs.id DESC; 
+         """
     query.execute(query_str)
     dados_logs = query.fetchall()
     query.close()
@@ -385,10 +395,10 @@ def busca_logs():
 @login_required(login_url='/index/')
 def visao_logs(request):
 
-    dados = busca_logs()
+    dados = busca_logs(descendente=True)
     qtde_logs = len(dados)
 
-    dados_logs = json.dumps(dados[(qtde_logs-20):(qtde_logs)])
+    dados_logs = json.dumps(dados[0:20])
 
     return render(request, 'visao_logs.html', {'dados': dados_logs,
                                                'qtde_logs': qtde_logs})
