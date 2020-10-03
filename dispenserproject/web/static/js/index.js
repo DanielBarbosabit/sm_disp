@@ -1,5 +1,5 @@
 //Globais
-var tempo_atualizacao = 5000;
+var tempo_atualizacao = 10000;
 var tabela = [];
 
 $(document).ready(function() {
@@ -142,32 +142,37 @@ function grafico_pizza(dados){
             data: lista_graficos
         });
 
-        var chart_bateria = new CanvasJS.Chart("grafico_bateria", {
-            theme:"light3",
-            animationEnabled: false,
-            title:{
-                text: "Tensão das baterias"
-            },
-            axisY :{
-                title: "Tensão (V)",
-                suffix: "V",
-                labelAutoFit: false,
-                minimum: 0,
-                maximum: 7
-            },
-            toolTip: {
-                shared: "true"
-            },
-            legend:{
-                cursor:"pointer",
-                itemclick : toggleDataSeries
-            },
-            data: lista_graficos_baterias
-        });
+        if (dados.admin == true){
+            var chart_bateria = new CanvasJS.Chart("grafico_bateria", {
+                theme:"light3",
+                animationEnabled: false,
+                title:{
+                    text: "Tensão das baterias"
+                },
+                axisY :{
+                    title: "Tensão (V)",
+                    suffix: "V",
+                    labelAutoFit: false,
+                    minimum: 0,
+                    maximum: 7
+                },
+                toolTip: {
+                    shared: "true"
+                },
+                legend:{
+                    cursor:"pointer",
+                    itemclick : toggleDataSeries
+                },
+                data: lista_graficos_baterias
+            });
+        }
 
         $('#loader_dash').hide();
         chart.render();
-        chart_bateria.render();
+
+        if (dados.admin == true){
+            chart_bateria.render();
+        }
 
         function toggleDataSeries(e) {
             if (typeof(e.dataSeries.visible) === "undefined" || e.dataSeries.visible ){
@@ -179,6 +184,7 @@ function grafico_pizza(dados){
             chart_bateria.render();
         }
     }else{
+        $('#container_tabela').hide();
         $('#loader_dash').hide();
         $('#sem_dispenser').text('Infelizmente, você ainda não possui dispensers :(');
         $('#sem_dispenser').show();
@@ -194,6 +200,10 @@ function tab_dispenser(){
         paging: true,
         searching: true,
         ordering: true,
+        rowReorder: {
+            selector: 'td:nth-child(4)'
+        },
+        responsive: true,
         "order": [[ 2, "asc" ]],
         "columns": [
             {"data": "Dispenser"},

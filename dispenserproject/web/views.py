@@ -29,7 +29,7 @@ max_linhas = 5000
 
 #Intervalo de coleta com o broker
 global intervalo_coleta
-intervalo_coleta = 30
+intervalo_coleta = 10
 
 sched = BackgroundScheduler()
 
@@ -66,14 +66,16 @@ def colhe_topicos_broker():
     topicos = query.fetchall()
     query.close()
 
+    topico_main = "sdtxmainxxxxx"
+
     for topico in topicos:
-        msg = subscribe.simple(str(topico[0]), hostname="broker.hivemq.com",
+        msg = subscribe.simple(topico_main, hostname="broker.hivemq.com",
                                port=1883, keepalive=5, client_id="smartdispenserwsdev")
 
-        topico_dispenser = str(msg.topic)
-        battery_level = str(msg.payload).strip("b'")[0:3]
+        topico_dispenser = str(msg.payload).strip("b'")[0:13]
+        battery_level = str(msg.payload).strip("b'")[13:16]
         battery_level = int(battery_level)
-        papel_level = str(msg.payload).strip("b'")[3:6]
+        papel_level = str(msg.payload).strip("b'")[16:19]
         if papel_level == '00Z':
             papel_level = 0
         elif papel_level == '00C':
@@ -183,7 +185,8 @@ def cria_cadastro(request):
 @login_required(login_url='/index/')
 def dashboard(request):
     if request.user.is_active:
-        return render(request, 'dashboard.html')
+        usuario = json.dumps(request.user.username.split(" ")[0])
+        return render(request, 'dashboard.html', {'usuario': usuario})
     else:
         return render(request, '/index/')
 
@@ -191,18 +194,27 @@ def dashboard(request):
 def atualiza_pizza(request):
     try:
     #verificacao do email do usuario utilizando o dash principal
-        email = str(request.user.email)
+        if not request.user.is_superuser:
+            email = str(request.user.email)
 
-        query = connection.cursor()
-        query_str = """
-             select
-                 d.topico_dispenser, d.localizacao
-             from
-                 web_ident_dispenser d
-             where 
-                d.id_usuario_id 
-                in 
-                    (select a.id from auth_user a where a.email = '{}');""".format(email)
+            query = connection.cursor()
+            query_str = """
+                 select
+                     d.topico_dispenser, d.localizacao
+                 from
+                     web_ident_dispenser d
+                 where 
+                    d.id_usuario_id 
+                    in 
+                        (select a.id from auth_user a where a.email = '{}');""".format(email)
+        else:
+            query = connection.cursor()
+            query_str = """
+                 select
+                     d.topico_dispenser, d.localizacao
+                 from
+                     web_ident_dispenser d;"""
+
         query.execute(query_str)
         dados_dispensers = query.fetchall()
         query.close()
@@ -238,7 +250,13 @@ def atualiza_pizza(request):
 
     # return JsonResponse({'paper_level': nivel_papel_atual, 'baterry_level': bateria_atual, 'dados': dispenser_id})
 
-    return JsonResponse({'dispenser': lista_dispensers})
+    if request.user.is_superuser:
+        admin = True
+    else:
+        admin = False
+
+
+    return JsonResponse({'dispenser': lista_dispensers, 'admin': admin})
 
 #Views - Cadastrar dispenser
 def busca_info_dispenser():

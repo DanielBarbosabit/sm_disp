@@ -82,29 +82,33 @@
                     </nav>
                 </div>
 <!--             row -->
-            <div class="col-8" style="margin-top:30px">
+            <div class="col-8" style="margin-top:30px"  align="center">
                 <!-- Tabela -->
-                <div id="container_tabela" class="container-fluid" style="margin-top:50px;margin-bottom:50px;margin-left:50px">
+                <div id="container_tabela" class="col-xs-12 col-md-8" style="margin-top:30px;margin-bottom:50px;">
                 </div>
-                <div class="container-fluid" style="width:100%;" align="center">
-                    <div class="container" align="center">
-                        <h4 id="sem_dispenser">Olá! Estamos verificando se você possui dispensers cadastrados</h4>
+                <div class="col-20" style="width:100%;" align="center" >
+                    <div class="container" align="center" style="margin-left:50px; margin-bottom:10px">
+                        <h5 id="sem_dispenser"></h5>
                     </div>
-                    <div id="loader_dash" class="loader"></div>
-                    <div id="chartContainer" style="height:300px;width:170%"></div>
+                    <div class="container" style="margin-left:50px; margin-top:40px">
+                        <div id="loader_dash" class="loader"></div>
+                    </div>
+                    <div id="chartContainer" style="height:400px;width:155%"></div>
                     {% if request.user.is_superuser %}
-                    <div id="grafico_bateria" style="height: 300px; width: 170%; margin-top:50px"></div>
+                    <div id="grafico_bateria" style="height:400px;width:155%; margin-top:50px; margin-bottom:50px"></div>
                     {% endif %}
 
                 </div>
             </div>
             {% if request.user.is_superuser %}
                 <div class="container">
-                    <a class="btn" href="{% url 'habilita_broker' %}">Habilitar Broker</a>
-                    <a class="btn" href="{% url 'desabilita_broker' %}">Desabilitar Broker</a>
+                    <div class="container-sm">
+                        <a class="btn btn-sm" style="font-size:12px;margin-bottom:15px" href="{% url 'habilita_broker' %}">Habilitar Broker</a>
+                        <a class="btn btn-sm" style="font-size:12px;margin-bottom:15px" href="{% url 'desabilita_broker' %}">Desabilitar Broker</a>
+                    </div>
                 </div>
             {% endif %}
-            <footer class="row tm-mt-small">
+            <footer class="row tm-mt-small" style="margin-top:400px">
                 <div class="col-12 font-weight-light">
                     <p class="d-inline-block tm-bg-black text-white py-2 px-4">
                         Copyright &copy; 2020 Sistema de Gerenciamento de Dispenser . Created by Smart Dispenser
@@ -130,7 +134,7 @@
     <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
     <script>
 <!--    Inclusao da tabela por script para que ela não seja vista antes do loader-->
-        var render_tabela = '<table id="tabela_dispenser" style="width:100%; margin-top:50px; margin-bottom:50px" border="1" class="display" align="center">' +
+        var render_tabela = '<table id="tabela_dispenser" style="margin-top:50px; margin-bottom:50px" border="1" class="display">' +
             '<thead>' +
                 '<tr>' +
                     '<th style="text-align:center">Dispenser</th>' +
@@ -144,10 +148,16 @@
         '</table>';
         $('#container_tabela').append(render_tabela);
         $('#tabela_dispenser').hide();
+
+        var usuario = {{usuario|safe}};
+        info = "Olá, "+ usuario + "! Estamos verificando se você possui dispensers cadastrados";
+        $('#sem_dispenser').text(info)
     </script>
 
 <!--    Inclusão da tabela-->
     <script src="/static/js/datatables.min.js"
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/rowreorder/1.2.7/js/dataTables.rowReorder.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/responsive/2.2.6/js/dataTables.responsive.min.js"></script>
 </body>
 </html>
