@@ -379,6 +379,39 @@ def edita_dispenser(request):
 
     return redirect('cadastrardispenser')
 
+def cadastrousuarios(request):
+
+    usuarios_list = []
+    usuario_list = []
+    usuarios = list(User.objects.all())
+    for usuario in usuarios:
+        usuario_list.append(usuario.id)
+        usuario_list.append(usuario.username)
+        usuario_list.append(usuario.email)
+        try:
+            usuario.date_joined = usuario.date_joined.strftime("%d/%m/%Y, %H:%M:%S")
+            usuario.last_login = usuario.last_login.strftime("%d/%m/%Y, %H:%M:%S")
+            usuario_list.append(usuario.date_joined)
+            usuario_list.append(usuario.last_login)
+        except:
+            usuario_list.append('data inválida')
+            usuario_list.append('data inválida')
+        usuarios_list.append(usuario_list)
+        usuario_list = []
+
+    usuarios_list = json.dumps(usuarios_list)
+
+    return render(request, 'cadastrarusuarios.html', {'usuarios': usuarios_list})
+
+def deletausuarios(request):
+    if request.user.is_superuser:
+        id = int(request.GET['id_usuario'].strip('exclui_'))
+        user = User.objects.get(id=id)
+        user.delete()
+        return redirect('cadastro_usuarios')
+    else:
+        return redirect('dashboard')
+
 #Views - Página de visão de Logs
 def busca_logs(descendente = False):
     query = connection.cursor()
