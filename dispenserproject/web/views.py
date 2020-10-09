@@ -120,27 +120,39 @@ def index(request):
 
 def login(request):
     # """Realiza o login de uma pessoa no sistema"""
-    if request.method == 'POST':
-        email = request.POST['email'].strip()
-        senha = request.POST['senha'].strip()
-        if email == '' and senha == '':
-            messages.error(request,'Os campos email e senha não podem ficar em branco')
-            return redirect('/index/')
-        elif email == '':
-            messages.error(request,'O campos email não pode ficar em branco')
-            return redirect('/index/')
-        elif senha == '':
-            messages.error(request,'O campos senha não pode ficar em branco')
-            return redirect('/index/')
-        if User.objects.filter(email=email).exists():
-            nome = User.objects.filter(email=email).values_list('username', flat=True).get()
-            user = auth.authenticate(request, username=nome, password=senha)
-            if user is not None:
-                auth.login(request, user)
-                return redirect('dashboard')
-        else:
-            messages.error(request,'Usuário/Senha inválidos')
-            return redirect('/index/')
+    try:
+        if request.method == 'POST':
+            email = request.POST['email'].strip()
+            senha = request.POST['senha'].strip()
+            if email == '' and senha == '':
+                messages.error(request,'Os campos email e senha não podem ficar em branco')
+                return redirect('/index/')
+            elif email == '':
+                messages.error(request,'O campos email não pode ficar em branco')
+                return redirect('/index/')
+            elif senha == '':
+                messages.error(request,'O campos senha não pode ficar em branco')
+                return redirect('/index/')
+            if User.objects.filter(email=email).exists():
+                print('print 1')
+                nome = User.objects.filter(email=email).values_list('username', flat=True).get()
+                print('nome: ', nome)
+                print('print 2')
+                user = auth.authenticate(request, username=nome, password=senha)
+                print('print 3')
+                if user is not None:
+                    print('print 4')
+                    auth.login(request, user)
+                    return redirect('dashboard')
+                else:
+                    messages.error(request, 'Erro de autenticação! Crie uma nova conta')
+                    return redirect('/index/')
+            else:
+                messages.error(request,'Usuário/Senha inválidos')
+                return redirect('/index/')
+    except:
+        messages.error(request, 'Erro de autenticação! Crie uma nova conta')
+        return redirect('/index/')
 
 def logout(request):
     auth.logout(request)
@@ -184,11 +196,11 @@ def cria_cadastro(request):
 
 @login_required(login_url='/index/')
 def dashboard(request):
-    # if request.user.is_active:
-    usuario = json.dumps(request.user.username.split(" ")[0])
-    return render(request, 'dashboard.html', {'usuario': usuario})
-    # else:
-    #     return render(request, '/index/')
+    if request.user.is_active:
+        usuario = json.dumps(request.user.username.split(" ")[0])
+        return render(request, 'dashboard.html', {'usuario': usuario})
+    else:
+        return render(request, '/index/')
 
 
 def atualiza_pizza(request):
