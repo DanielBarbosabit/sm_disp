@@ -43,8 +43,8 @@
                         <a class="navbar-brand" href="#">
                             <div>
                                 <img src="/static/img/logo_sem_fundo_dash.png"></img>
+                                <h5>SMART DISPENSER</h5>
                              </div>
-                            <h1 class="tm-site-title mb-0">SMART DISPENSER</h1>
                         </a>
                         <button class="navbar-toggler ml-auto mr-0" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                             aria-expanded="false" aria-label="Toggle navigation">
@@ -55,6 +55,9 @@
                             <ul class="navbar-nav mx-auto">
                                     <li class="nav-item">
                                             <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                                    </li>
+                                    <li class="nav-item">
+                                            <a class="nav-link" href="{% url 'historico' %}">Histórico</a>
                                     </li>
                                 {% if request.user.is_superuser %}
                                     <li class="nav-item">

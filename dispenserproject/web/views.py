@@ -5,7 +5,7 @@ import paho.mqtt.subscribe as subscribe
 import time
 from time import time as timer
 from apscheduler.schedulers.background import BackgroundScheduler
-from web.models import Logs, Ident_dispenser
+from web.models import Logs, Ident_dispenser, Historico_pacotes
 from django.http import HttpResponse, JsonResponse
 import random
 from django.contrib.auth.models import User
@@ -27,9 +27,13 @@ tempo_coleta = []
 global max_linhas
 max_linhas = 5000
 
+#erro da medicao- Oscilação - 0,5%
+global oscilacao_medicao
+oscilacao_medicao = 5
+
 #Intervalo de coleta com o broker
 global intervalo_coleta
-intervalo_coleta = 30
+intervalo_coleta = 20
 
 sched = BackgroundScheduler()
 
@@ -43,11 +47,12 @@ def callback_broker():
         print("Abrindo conexão...")
         try:
             colhe_topicos_broker()
-
         except:
             print("Não coletada a mensagem")
     else:
         print('Banco de dados já atingiu o máximo estipulado')
+
+
 
 # Inicia os dois schedulers
 sched.add_job(callback_broker, 'interval', seconds=intervalo_coleta)
@@ -58,7 +63,7 @@ def colhe_topicos_broker():
     query = connection.cursor()
     query_str = """
          select
-             d.topico_dispenser
+             d.id, d.topico_dispenser
          from
              web_ident_dispenser d;
      """
@@ -86,11 +91,72 @@ def colhe_topicos_broker():
         date_time = datetime.datetime.now() - datetime.timedelta(hours=3)
         date_time = date_time.strftime("%m/%d/%Y-%H:%M:%S")
 
+        atualiza_acumulo_e_historico(topico_dispenser,papel_level)
+
         new_data = Logs(topico_dispenser=topico_dispenser, date_time=date_time,
                         battery_level=battery_level, paper_level=papel_level)
         new_data.save()
         print("Dado inserido no banco de dados")
 
+        # chama a rotina para atualizacao do gasto acumulado e atualizacao do histórico de gasto
+
+
+
+def atualiza_acumulo_e_historico(topico,papel_level):
+    query_str = """
+         select 
+             *
+         from 
+             web_logs logs
+         where
+            logs.topico_dispenser = '{}'
+         order by
+            logs.id DESC
+        limit 1; 
+     """.format(str(topico))
+
+    query = connection.cursor()
+    query.execute(query_str)
+    dados_logs = query.fetchone()
+    query.close()
+
+    date_time = datetime.datetime.now() - datetime.timedelta(hours=3)
+    date_time = date_time.strftime("%m/%d/%Y-%H:%M:%S")
+
+    if dados_logs == None:
+        edited_dispenser = Ident_dispenser.objects.get(topico_dispenser=str(topico))
+        edited_dispenser.paper_level_last = papel_level
+        edited_dispenser.ultima_atualizacao = date_time
+        #todo: caso os logs do dispenser tenham sido zerados, a porcentagem acumulada também é zerada. Pensar melhor nisso!
+        edited_dispenser.porcentagem_acumulada = 0
+        edited_dispenser.relacao_pacotes = 100
+        edited_dispenser.save()
+        return
+    else:
+        dados_dispenser = Ident_dispenser.objects.get(topico_dispenser=str(topico))
+        ultima_medicao = dados_dispenser.paper_level_last
+        acumulado = dados_dispenser.porcentagem_acumulada
+        relacao = dados_dispenser.relacao_pacotes
+
+        #relacao é dada: altura do pacote de papel / altura do dispenser
+
+        if ((papel_level - oscilacao_medicao) > ultima_medicao):
+            acumulado = acumulado + (papel_level - ultima_medicao)
+            if acumulado > (1000/ (relacao/100)):
+                new_data = Historico_pacotes(topico_dispenser=str(topico), date_time=date_time)
+                new_data.save()
+                acumulado = 0
+
+            dados_dispenser.paper_level_last = papel_level
+            dados_dispenser.ultima_atualizacao = date_time
+            dados_dispenser.porcentagem_acumulada = acumulado
+            dados_dispenser.save()
+            return
+        else:
+            dados_dispenser.paper_level_last = papel_level
+            dados_dispenser.ultima_atualizacao = date_time
+            dados_dispenser.save()
+            return
 
 @login_required(login_url='/index/')
 def habilita_broker(request):
@@ -271,7 +337,15 @@ def atualiza_pizza(request):
     return JsonResponse({'dispenser': lista_dispensers, 'admin': admin})
 
 #Views - Cadastrar dispenser
-def busca_info_dispenser():
+def busca_info_dispenser(dados_usuarios):
+    #Verifica se todos os dispensers estão alocados em id's com usuários válidos
+    #caso contrário aloca para algum administrador
+    ids_validos = list(dados_usuarios.keys())
+    dispensers_desalocados = Ident_dispenser.objects.exclude(id_usuario_id__in = ids_validos)
+    for dispenser in dispensers_desalocados:
+        dispenser.id_usuario_id = 1
+        dispenser.save()
+
     # Relação de dispensers e usuário
     query = connection.cursor()
     query_str = """
@@ -307,8 +381,8 @@ def busca_usuarios():
 def cadastrardispenser(request):
     if request.user.is_superuser:
         try:
-            dados_dispensers = busca_info_dispenser()
             dados_usuarios = dict(busca_usuarios())
+            dados_dispensers = busca_info_dispenser(dados_usuarios)
 
             dados_dispensers = json.dumps(dados_dispensers)
             dados_usuarios = json.dumps(dados_usuarios)
@@ -471,6 +545,117 @@ def atualiza_logs(request):
 
     dados_logs = list(busca_logs())
     return JsonResponse({'dados_novos': dados_logs})
+
+def historico(request):
+    hoje = (datetime.datetime.now() - datetime.timedelta(hours=3)).date()
+    dia_da_semana = hoje.weekday() + 1
+    #data do dia do comeco da semana
+    comeco_da_semana = hoje - datetime.timedelta(days=dia_da_semana)
+
+    #Coleta os dispensers do usuario e suas localizações. Se for ADMIN, coleta todos os dispensers
+    if not request.user.is_superuser:
+        email = str(request.user.email)
+
+        query = connection.cursor()
+        query_str = """
+             select
+                 d.topico_dispenser, d.localizacao, d.relacao_pacotes
+             from
+                 web_ident_dispenser d
+             where 
+                d.id_usuario_id 
+                in 
+                    (select a.id from auth_user a where a.email = '{}');""".format(email)
+    else:
+        query = connection.cursor()
+        query_str = """
+             select
+                 d.topico_dispenser, d.localizacao, d.relacao_pacotes
+             from
+                 web_ident_dispenser d;"""
+
+    query.execute(query_str)
+    dados_dispensers = query.fetchall()
+    query.close()
+
+    #coleta os dados da web_historico_pacotes
+    if len(dados_dispensers) > 0:
+        lista_dispensers = []
+        for dispenser in dados_dispensers:
+            lista_dispensers.append(str(dispenser[0]))
+
+        query = connection.cursor()
+        query_str = """
+             select
+                 hist.topico_dispenser, hist.date_time
+             from
+                 web_historico_pacotes hist
+             where
+                hist.topico_dispenser in %(lista_dispensers)s;"""
+        query.execute(query_str,{'lista_dispensers': lista_dispensers})
+        historico_dispensers = query.fetchall()
+        query.close()
+
+        dict_dispenser = {}
+        lista_historico = []
+
+        for dado in dados_dispensers:
+            dict_dispenser['dispenser'] = 'Dispenser ' + str(dado[0].strip('sdtx').lstrip('0'))
+            dict_dispenser['localizacao']= str(dado[1])
+            dict_dispenser['diario'] = 0
+            dict_dispenser['semanal'] = 0
+            dict_dispenser['mensal'] = 0
+            dict_dispenser['relacao_pacotes'] = int(dado[2]) / 100
+            for historico in historico_dispensers:
+                if str(historico[0]) == dado[0]:
+                    date_time_registro = datetime.datetime.strptime(historico[1], "%m/%d/%Y-%H:%M:%S")
+                    if date_time_registro.date() == hoje:
+                        dict_dispenser['diario'] = dict_dispenser['diario'] + 1
+                    elif (date_time_registro.year == comeco_da_semana.year) and \
+                            (date_time_registro.month == comeco_da_semana.month) and \
+                            (date_time_registro.day > comeco_da_semana.day) and \
+                            (date_time_registro.day < hoje.day):
+                        dict_dispenser['semanal'] = dict_dispenser['semanal'] + 1
+                    elif (date_time_registro.year == comeco_da_semana.year) and (hoje.month == date_time_registro.month):
+                        dict_dispenser['mensal'] = dict_dispenser['mensal'] + 1
+
+            lista_historico.append(dict_dispenser)
+            dict_dispenser = {}
+
+    else:
+        lista_historico = []
+
+    lista_historico = json.dumps(lista_historico)
+
+
+    return render(request, 'historico.html',{'historico': lista_historico})
+
+def historico_editar_dispenser(request):
+    numero_dispenser = int(request.POST['id_dispenser'].split(' ')[1])
+    topico = str('sdtx' + str(numero_dispenser).zfill(9))
+
+    Identificacao_dispenser = Ident_dispenser.objects.get(topico_dispenser=topico)
+    Identificacao_dispenser.localizacao = str(request.POST['localizacao_dispenser'])
+
+    #normalizando relacao
+    try:
+        relacao_inteiro, relacao_decimal = (request.POST['relacao_dispenser']).split(',')
+        relacao = int(relacao_inteiro) * 100 + int(relacao_decimal) * 10
+    except:
+        relacao_inteiro = request.POST['relacao_dispenser']
+        relacao = int(relacao_inteiro) * 100
+    Identificacao_dispenser.relacao_pacotes = relacao
+    Identificacao_dispenser.save()
+
+    return redirect('historico')
+
+def historico_excluir(request):
+    numero_dispenser = int(request.GET['topico_dispenser'].split(' ')[1])
+    topico = str('sdtx' + str(numero_dispenser).zfill(9))
+
+    historico_dispenser = Historico_pacotes.objects.filter(topico_dispenser=topico).delete()
+
+    return redirect('historico')
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):

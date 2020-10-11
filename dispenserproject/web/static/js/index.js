@@ -65,12 +65,18 @@ function grafico_pizza(dados){
             length_array = dados_dispenser.length - 1;
             dict_linha['Dispenser'] = logs[k].topico;
             dict_linha['Localização'] = logs[k].localizacao;
-            dict_linha['Quantidade de papel'] = dados_dispenser[length_array].papel;
-            if (dados_dispenser[length_array].bateria > 4,5){
-                dict_linha['Bateria'] = 'OK';
+            if (length_array > 0){
+                dict_linha['Quantidade de papel'] = dados_dispenser[length_array].papel;
+                if (dados_dispenser[length_array].bateria > 4,5){
+                    dict_linha['Bateria'] = 'OK';
+                }else{
+                    dict_linha['Bateria'] = 'Substituir';
+                }
             }else{
-                dict_linha['Bateria'] = 'Substituir';
+                dict_linha['Quantidade de papel'] = null;
+                dict_linha['Bateria'] = 'Condição indefinida';
             }
+
 
             tabela.push(dict_linha);
             dict_linha = {};

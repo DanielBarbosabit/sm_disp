@@ -1,4 +1,6 @@
 
+<!--python manage.py runserver 0.0.0.0:8080-->
+
 {% load static %}
 
 <!DOCTYPE html>
@@ -23,7 +25,7 @@
 <!--    Tabela-->
     <link rel="stylesheet" href="/static/css/datatables.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
-    <link rel="stylesheet" href="/static/css/cadastrardispenser.css">
+    <link rel="stylesheet" href="/static/css/historico.css">
 <!--    <link rel="stylesheet" href="/static/css/css/bootstrap.min.css">-->
 <!--    <link rel="stylesheet" href="/static/css/css/datatables.min.css">-->
 <!--    <link rel="stylesheet" href="/static/css/css/tooplate.css">-->
@@ -41,7 +43,7 @@
                         <a class="navbar-brand" href="#">
                             <div>
                                 <img src="/static/img/logo_sem_fundo_dash.png"></img>
-                                <h5>SMART DISPENSER</h5></img>
+                                <h5>SMART DISPENSER</h5>
                              </div>
                         </a>
                         <button class="navbar-toggler ml-auto mr-0" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
@@ -61,7 +63,7 @@
                                     <li class="nav-item">
                                             <a class="nav-link" href="{% url 'cadastrardispenser' %}">Cadastrar Dispenser</a>
                                     </li>
-                                    <li class="nav-item">
+                                   <li class="nav-item">
                                         <a class="nav-link" href="{% url 'cadastro_usuarios' %}">Usuários</a>
                                     </li>
                                     <li class="nav-item">
@@ -76,24 +78,17 @@
                     </nav>
                 </div>
             </div>
-                <div class="container" style="margin-top:40px">
-                    <a type="button" href="{% url 'exporta_logs' %}"
-                       class="btn btn-primary">Exportar</a>
-                    <a type="button" href="{% url 'deleta_logs' %}"
-                       class="btn btn-primary">Deletar registros</a>
-                    <div class="container" align="right">
-                        <h5>Quantidade de logs na tabela: <p id="qtde_logs"></p></h5>
-                    </div>
-                </div>
                 <div class="container" style="margin-top:20px">
-                    <table id="table_logs_dispenser" border="1" class="display" style="width:100%">
+                    <table id="table_cadastro_dispenser" border="1" class="display" style="width:100%">
                         <thead>
                             <tr>
-                                <th>ID do log</th>
                                 <th>Dispenser</th>
-                                <th>Data</th>
-                                <th>Tensão da Bateria (V)</th>
-                                <th>Nível de papel (%)</th>
+                                <th>Localização</th>
+                                <th>Consumo diário (pacotes)</th>
+                                <th>Consumo semanal (pacotes)</th>
+                                <th>Consumo Mensal (pacotes)</th>
+                                <th>Capacidade</th>
+                                <th>Configurar/ Excluir</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -114,6 +109,36 @@
         </div>
 </body>
 
+<form id="form_edicao_dispenser" method="POST" action="{% url 'historico_editar_dispenser' %}">{% csrf_token %}
+    <div class="modal" tabindex="-1" role="dialog" id="modal_edita_dispenser">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar Dispenser</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="row" style="margin-left:5px">
+                <h8 name="identificao_dispenser" id="identificao_dispenser"></h8>
+                <input type="hidden" name="id_dispenser" id="id_disperser"></input>
+            </div>
+            <div class="row" style="margin-top:15px;margin-left:5px">Localização:
+                <textarea rows="3" class="form-control" name="localizacao_dispenser" id="localizacao_dispenser"></textarea>
+            </div>
+            <div class="row" style="margin-top:15px;margin-left:5px">Relação quantidade de pacotes por dispenser:
+                <input name="relacao_dispenser" id="relacao_dispenser"></input>
+            </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn botao-abrir">Salvar</button>
+            <button type="button" class="btn botao-fechar" data-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+</form>
+
     <script src="/static/js/jquery-3.3.1.min.js"></script>
     <script src="/static/js/bootstrap.min.js"></script>
 <!--    <script type="text/javascript" src="/static/js/datatables.min.js"></script>-->
@@ -124,9 +149,9 @@
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
     <script src="/static/js/jquery-3.3.1.min.js"></script>
     <script src="/static/js/bootstrap.min.js"></script>
-    <script type='text/javascript' src='http://code.jquery.com/jquery-1.7.2.min.js'></script>
+    <script type='text/javascript' src='https://code.jquery.com/jquery-1.7.2.min.js'></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
-    <script src="/static/js/visao_logs.js"></script>
+    <script src="/static/js/historico.js"></script>
 
 <!--    <script src="/static/js/js/dataTables.bootstrap.min.js"></script>-->
 <!--    <script src="/static/js/js/dataTables.bootstrap4.min.js"></script>-->
@@ -135,8 +160,8 @@
 <!--    <script src="/static/js/js/dataTables.semanticui.min.js"></script>-->
     <script src="/static/js/js/jquery.dataTables.min.js"></script>
     <script>
-        dados = {{dados|safe}};
-        qtde_logs = {{qtde_logs|safe}};
+        dados = {{historico|safe}};
+        console.log(dados);
     </script>
 
 </html>
