@@ -541,9 +541,7 @@ def atualiza_logs(request):
 
 def historico(request):
     hoje = (datetime.datetime.now() - datetime.timedelta(hours=3)).date()
-    dia_da_semana = hoje.weekday() + 1
-    #data do dia do comeco da semana
-    comeco_da_semana = hoje - datetime.timedelta(days=dia_da_semana)
+    semana_atual = hoje.isocalendar()[1]
 
     #Coleta os dispensers do usuario e suas localizações. Se for ADMIN, coleta todos os dispensers
     if not request.user.is_superuser:
@@ -577,17 +575,6 @@ def historico(request):
         for dispenser in dados_dispensers:
             lista_dispensers.append(str(dispenser[0]))
 
-        # query = connection.cursor()
-        # query_str = """
-        #      select
-        #          hist.topico_dispenser, hist.date_time
-        #      from
-        #          web_historico_pacotes hist
-        #      where
-        #         hist.topico_dispenser in %(lista_dispensers)s;"""
-        # query.execute(query_str,{'lista_dispensers': lista_dispensers})
-        # historico_dispensers = query.fetchall()
-        # query.close()
 
         historico_dispensers = Historico_pacotes.objects.filter(topico_dispenser__in=lista_dispensers).values_list('topico_dispenser','date_time')
 
@@ -606,13 +593,11 @@ def historico(request):
                     date_time_registro = datetime.datetime.strptime(historico[1], "%m/%d/%Y-%H:%M:%S")
                     if date_time_registro.date() == hoje:
                         dict_dispenser['diario'] = dict_dispenser['diario'] + 1
-                    elif (date_time_registro.year == comeco_da_semana.year) and \
-                            (date_time_registro.month == comeco_da_semana.month) and \
-                            (date_time_registro.day > comeco_da_semana.day) and \
-                            (date_time_registro.day < hoje.day):
-                        dict_dispenser['semanal'] = dict_dispenser['semanal'] + 1
-                    elif (date_time_registro.year == comeco_da_semana.year) and (hoje.month == date_time_registro.month):
+                    if (date_time_registro.year == hoje.year) and (hoje.month == date_time_registro.month):
                         dict_dispenser['mensal'] = dict_dispenser['mensal'] + 1
+                    if (date_time_registro.year == hoje.year) and (semana_atual == date_time_registro.isocalendar()[1]):
+                        dict_dispenser['semanal'] = dict_dispenser['semanal'] + 1
+
 
             lista_historico.append(dict_dispenser)
             dict_dispenser = {}
