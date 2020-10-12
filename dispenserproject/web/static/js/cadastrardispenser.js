@@ -65,19 +65,13 @@ function exclui_dispenser(id){
 
 function select_usuarios(){
     var dicionario = {};
-    var data = [];
-
-    $.each(usuarios, function(index, value ) {
-        dicionario[index] = value;
-        data.push(dicionario);
-        dicionario = {};
-    });
+    var data = usuarios;
 
     var $select = $('#email_usuario');
 
-    $.each(data, function(i, val){
-        $select.append($('<option />', { value: val[i+1], text: val[i+1] }));
-    });
+    for(i=0; i<data.length; i++){
+        $select.append($('<option />', { value: data[i][0], text: data[i][1] }));
+    }
 }
 
 

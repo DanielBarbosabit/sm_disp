@@ -23,6 +23,10 @@ $(document).ready(function() {
         ],
         "data": tabela
     });
+
+    setInterval(function(){
+        location.reload();
+    }, 30000);
 });
 
 function carrega_dados(tabela){

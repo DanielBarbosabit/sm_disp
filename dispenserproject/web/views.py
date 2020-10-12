@@ -33,7 +33,7 @@ oscilacao_medicao = 5
 
 #Intervalo de coleta com o broker
 global intervalo_coleta
-intervalo_coleta = 20
+intervalo_coleta = 30
 
 sched = BackgroundScheduler()
 
@@ -381,8 +381,8 @@ def busca_usuarios():
 def cadastrardispenser(request):
     if request.user.is_superuser:
         try:
-            dados_usuarios = dict(busca_usuarios())
-            dados_dispensers = busca_info_dispenser(dados_usuarios)
+            dados_usuarios = busca_usuarios()
+            dados_dispensers = busca_info_dispenser(dict(dados_usuarios))
 
             dados_dispensers = json.dumps(dados_dispensers)
             dados_usuarios = json.dumps(dados_usuarios)
@@ -434,14 +434,7 @@ def edita_dispenser(request):
     if request.POST:
         dispenser = str(request.POST.get('id_dispenser'))
         localizacao = str(request.POST.get('localizacao_dispenser'))
-        email = str(request.POST.get('email_usuario'))
-
-        query = connection.cursor()
-        query_str = "select a.id from auth_user a where a.email = '{}';".format(email)
-
-        query.execute(query_str)
-        id = query.fetchone()[0]
-        query.close()
+        id = str(request.POST.get('email_usuario'))
 
         #Edição do dispenser
         edited_dispenser = Ident_dispenser.objects.get(topico_dispenser = dispenser)
@@ -584,17 +577,19 @@ def historico(request):
         for dispenser in dados_dispensers:
             lista_dispensers.append(str(dispenser[0]))
 
-        query = connection.cursor()
-        query_str = """
-             select
-                 hist.topico_dispenser, hist.date_time
-             from
-                 web_historico_pacotes hist
-             where
-                hist.topico_dispenser in %(lista_dispensers)s;"""
-        query.execute(query_str,{'lista_dispensers': lista_dispensers})
-        historico_dispensers = query.fetchall()
-        query.close()
+        # query = connection.cursor()
+        # query_str = """
+        #      select
+        #          hist.topico_dispenser, hist.date_time
+        #      from
+        #          web_historico_pacotes hist
+        #      where
+        #         hist.topico_dispenser in %(lista_dispensers)s;"""
+        # query.execute(query_str,{'lista_dispensers': lista_dispensers})
+        # historico_dispensers = query.fetchall()
+        # query.close()
+
+        historico_dispensers = Historico_pacotes.objects.filter(topico_dispenser__in=lista_dispensers).values_list('topico_dispenser','date_time')
 
         dict_dispenser = {}
         lista_historico = []
